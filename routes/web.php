@@ -8,3 +8,8 @@ Route::get('/login', function () {
         'message' => 'Veuillez vous connecter !'
     ],401);
 })->name('login');
+
+
+Route::get('/', function(){
+    return view('welcome');
+});
