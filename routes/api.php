@@ -21,6 +21,14 @@ Route::middleware('auth:admin')->group(function(){
 
     //Matching:
     Route::get('/matching/run', [EtudiantController::class, 'matchAll']);
+
+    Route::post('/ajout/sous/admin', [AdminController::class, 'ajout_admin']);
+    Route::get('/liste/admin', [AdminController::class, 'liste_admin']);
+    Route::get('/admin/{id}', [AdminController::class, 'admin']);
+    Route::post('delete/admin/{id}', [AdminController::class, 'delete_admin']);
+    Route::get('/info/admin', [AdminController::class, 'info_admin']);
+    Route::post('/update/info/', [AdminController::class, 'update_info']);
+    Route::post('/change/password', [AdminController::class, 'change_password']);
 });
 
 Route::get('/parrainage/matricule/{matricule}', [EtudiantController::class, 'showByMatricule']);

@@ -423,4 +423,6 @@ class EtudiantController extends Controller
         ]);
     }
 
+    
+
 }
