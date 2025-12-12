@@ -372,6 +372,7 @@ class EtudiantController extends Controller
         if (!$parrainage) {
             return response()->json([
                 "success" => true,
+                "type" => 'L1',
                 "message" => "Cet étudiant n'a pas encore de parrain.",
                 "etudiant" => $etudiant,
                 "parrain" => null
@@ -404,9 +405,10 @@ class EtudiantController extends Controller
         if ($parrainages->isEmpty()) {
             return response()->json([
                 "success" => true,
+                "type" => "L2",
                 "message" => "Cet étudiant n'a pas encore de filleuls.",
                 "etudiant" => $etudiant,
-                "filleuls" => []
+                "filleuls" => null
             ]);
         }
 
