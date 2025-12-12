@@ -29,6 +29,10 @@ Route::middleware('auth:admin')->group(function(){
     Route::get('/info/admin', [AdminController::class, 'info_admin']);
     Route::post('/update/info/', [AdminController::class, 'update_info']);
     Route::post('/change/password', [AdminController::class, 'change_password']);
+
+    Route::post('/etudiant/{niveau}/{filiere}/ajouter', [EtudiantController::class, 'ajouterEtudiant']);
+    Route::post('/etudiant/{id}/modifier', [EtudiantController::class, 'modifierEtudiant']);
+    Route::post('/etudiant/{id}/supprimer', [EtudiantController::class, 'supprimerEtudiant']);
 });
 
 Route::get('/parrainage/matricule/{matricule}', [EtudiantController::class, 'showByMatricule']);

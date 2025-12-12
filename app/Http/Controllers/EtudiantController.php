@@ -13,6 +13,7 @@ use App\Models\L2MIAGE;
 use App\Models\Parrainage;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 use Maatwebsite\Excel\Facades\Excel;
 
 class EtudiantController extends Controller
@@ -422,6 +423,156 @@ class EtudiantController extends Controller
             "filleuls" => $filleuls
         ]);
     }
+
+    public function ajouterEtudiant(Request $request, $niveau, $filiere){
+        // Normaliser les valeurs (L1 → l1, Miage → miage)
+        $niveau = strtolower($niveau);
+        $filiere = strtolower($filiere);
+
+        // Table cible en fonction du niveau + filière
+        $mapping = [
+            'l1' => [
+                'gi'     => L1GI::class,
+                'miage'  => L1MIAGE::class,
+            ],
+            'l2' => [
+                'gi'     => L2GI::class,
+                'miage'  => L2MIAGE::class,
+            ]
+        ];
+
+        // Vérifier si la combinaison existe
+        if (!isset($mapping[$niveau][$filiere])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Combinaison niveau/filière invalide. Exemple: l1/gi, l2/miage'
+            ], 400);
+        }
+
+        $model = $mapping[$niveau][$filiere];
+
+        // Validation dynamique
+        $validator = Validator::make($request->all(),[
+            'matricule' => 'required|string|unique:' . (new $model)->getTable() . ',matricule',
+            'nom'       => 'required|string',
+            'telephone' => 'nullable|string|unique:' . (new $model)->getTable() . ',telephone',
+            'email'     => 'nullable|email|unique:' . (new $model)->getTable() . ',email',
+        ]);
+
+        if($validator->fails()){
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()->first()
+            ],422);
+        }
+
+        // Création de l'étudiant
+        $etudiant = $model::create([
+            'matricule' => $request->matricule,
+            'nom'       => $request->nom,
+            'telephone' => $request->telephone,
+            'email'     => $request->email,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Étudiant ajouté en " . strtoupper($niveau) . " " . strtoupper($filiere) . " avec succès",
+            'etudiant' => $etudiant
+        ]);
+    }
+
+
+    private function findEtudiantById($id){
+        $models = [
+            L1GI::class,
+            L1MIAGE::class,
+            L2GI::class,
+            L2MIAGE::class,
+        ];
+
+        foreach ($models as $model) {
+            $record = $model::find($id);
+            if ($record) {
+                return [$model, $record];
+            }
+        }
+
+        return [null, null];
+    }
+
+    public function modifierEtudiant(Request $request, $id){
+        try{
+            // Retrouver l'étudiant dans la bonne table
+            [$model, $etudiant] = $this->findEtudiantById($id);
+
+            if (!$etudiant) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Aucun étudiant trouvé avec cet ID."
+                ], 404);
+            }
+
+            // Validation dynamique
+            $validator = Validator::make($request->all(), [
+                'matricule' => 'sometimes|string|unique:' . (new $model)->getTable() . ',matricule,' . $etudiant->id,
+                'nom'       => 'sometimes|string',
+                'telephone' => 'nullable|string|unique:' . (new $model)->getTable() . ',telephone,' . $etudiant->id,
+                'email'     => 'nullable|email|unique:' . (new $model)->getTable() . ',email,' . $etudiant->id,
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $validator->errors()->first()
+                ], 422);
+            }
+
+            // Mise à jour
+            $etudiant->update($request->only(['matricule', 'nom', 'telephone', 'email']));
+
+            return response()->json([
+                'success' => true,
+                'message' => "Étudiant modifié avec succès.",
+                'data' => $etudiant
+            ],200);
+        }
+        catch(QueryException $e){
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la modification de l’etudiant',
+                'erreur' => $e->getMessage()
+            ],500);
+        }
+    }
+
+    public function supprimerEtudiant($id){
+        try{
+            [$model, $etudiant] = $this->findEtudiantById($id);
+
+            if (!$etudiant) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Aucun étudiant trouvé avec cet ID."
+                ], 404);
+            }
+
+            $etudiant->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => "Étudiant supprimé avec succès."
+            ],200);
+        }
+        catch(QueryException $e){
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la suppression de l’etudiant',
+                'erreur' => $e->getMessage()
+            ],500);
+        }
+    }
+
+
 
     
 
