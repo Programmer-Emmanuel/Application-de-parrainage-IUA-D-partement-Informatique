@@ -3,6 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Admin;
+use App\Models\L1GI;
+use App\Models\L1MIAGE;
+use App\Models\L2GI;
+use App\Models\L2MIAGE;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -391,4 +395,72 @@ class AdminController extends Controller
             ], 500);
         }
     }
+
+
+    public function reinitialiser(Request $request){
+        // Vérification du input
+        $validator = Validator::make($request->all(), [
+            'password' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()->first()
+            ], 422);
+        }
+
+        // Récupération de l'utilisateur connecté
+        $admin = $request->user();
+
+        if (!$admin) {
+            return response()->json([
+                'success' => false,
+                'message' => "Vous devez être connecté."
+            ], 401);
+        }
+
+        if($admin->role != 1){
+            return response()->json([
+                'success' => false,
+                'message' => 'Seul le super admin peut effectuer cette action'
+            ],403);
+        }
+
+        // Vérification du mot de passe
+        if (!Hash::check($request->password, $admin->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => "Mot de passe incorrect."
+            ], 401);
+        }
+
+        // Réinitialisation
+        try {
+            $models = [
+                L1GI::class,
+                L1MIAGE::class,
+                L2GI::class,
+                L2MIAGE::class
+            ];
+
+            foreach ($models as $model) {
+                $model::truncate();
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Réinitialisation réussie.'
+            ], 200);
+
+        } catch (QueryException $e) {
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la réinitialisation.',
+                'erreur' => $e->getMessage()
+            ], 500);
+        }
+    }
+
 }

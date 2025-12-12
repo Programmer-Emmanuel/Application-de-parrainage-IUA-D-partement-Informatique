@@ -33,6 +33,9 @@ Route::middleware('auth:admin')->group(function(){
     Route::post('/etudiant/{niveau}/{filiere}/ajouter', [EtudiantController::class, 'ajouterEtudiant']);
     Route::post('/etudiant/{id}/modifier', [EtudiantController::class, 'modifierEtudiant']);
     Route::post('/etudiant/{id}/supprimer', [EtudiantController::class, 'supprimerEtudiant']);
+
+    Route::post('/reinitialiser', [AdminController::class, 'reinitialiser']);
+
 });
 
 Route::get('/parrainage/matricule/{matricule}', [EtudiantController::class, 'showByMatricule']);
