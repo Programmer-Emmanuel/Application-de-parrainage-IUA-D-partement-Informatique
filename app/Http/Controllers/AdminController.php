@@ -50,6 +50,11 @@ class AdminController extends Controller
                     'message' => 'Administrateur connecté.'
                 ],200);
             }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Identifiants incorrects'
+            ],400);
         }
         catch(QueryException $e){
             return response()->json([

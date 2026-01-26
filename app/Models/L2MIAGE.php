@@ -28,6 +28,21 @@ class L2MIAGE extends Model
         'email',
     ];
 
+    public function setTelephoneAttribute($value)
+    {
+        if ($value) {
+            // Enlever les espaces
+            $value = preg_replace('/\s+/', '', $value);
+
+            // Si le numéro ne commence pas déjà par +225
+            if (!str_starts_with($value, '+225')) {
+                $value = '+225' . $value;
+            }
+
+            $this->attributes['telephone'] = $value;
+        }
+    }
+
     public function filleuls(){
         return $this->hasMany(Parrainage::class, 'parrain_id');
     }
