@@ -34,6 +34,8 @@ Route::middleware('auth:admin')->group(function(){
     Route::post('/etudiant/{id}/modifier', [EtudiantController::class, 'modifierEtudiant']);
     Route::post('/etudiant/{id}/supprimer', [EtudiantController::class, 'supprimerEtudiant']);
 
+    Route::get('/all/matching', [EtudiantController::class, 'getAllMatchingDetails']);
+
     Route::post('/reinitialiser', [AdminController::class, 'reinitialiser']);
 
 });

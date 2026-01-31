@@ -574,6 +574,69 @@ class EtudiantController extends Controller
         }
     }
 
+    public function getAllMatchingDetails(){
+        $data = [];
+
+        $filieres = [
+            "GI" => [
+                "L1" => L1GI::class,
+                "L2" => L2GI::class,
+            ],
+            "MIAGE" => [
+                "L1" => L1MIAGE::class,
+                "L2" => L2MIAGE::class,
+            ]
+        ];
+
+        foreach ($filieres as $filiere => $models) {
+
+            $parrains = $models['L2']::all();
+
+            foreach ($parrains as $parrain) {
+
+                // Tous les parrainages du parrain
+                $parrainages = Parrainage::where('parrain_id', $parrain->id)
+                    ->where('filiere', $filiere)
+                    ->get();
+
+                // Récupérer les filleuls
+                $filleuls = $models['L1']::whereIn(
+                    'id',
+                    $parrainages->pluck('filleul_id')
+                )->get();
+
+                $data[] = [
+                    "filiere" => $filiere,
+
+                    "parrain" => [
+                        "id"        => $parrain->id,
+                        "matricule" => $parrain->matricule,
+                        "nom"       => $parrain->nom,
+                        "telephone" => $parrain->telephone,
+                        "email"     => $parrain->email,
+                    ],
+
+                    "nb_filleuls" => $filleuls->count(),
+
+                    "filleuls" => $filleuls->map(fn($f) => [
+                        "id"        => $f->id,
+                        "matricule" => $f->matricule,
+                        "nom"       => $f->nom,
+                        "telephone" => $f->telephone,
+                        "email"     => $f->email,
+                    ]),
+                ];
+            }
+        }
+
+        return response()->json([
+            "success" => true,
+            "total_parrains" => count($data),
+            "data" => $data
+        ]);
+    }
+
+
 
 
     
