@@ -247,87 +247,82 @@ class EtudiantController extends Controller
     //  M A T C H I N G     P A R     F I L I E R E
     // ==================================================
 
-    private function matchFiliere($filiere, $L1Model, $L2Model){
-        // Tous les L1
-        $l1_all = $L1Model::all();
-        // Tous les L2
-        $l2_all = $L2Model::all();
+    private function matchFiliere($filiere, $L1Model, $L2Model)
+{
+    $l1_all = $L1Model::all();
+    $l2_all = $L2Model::all();
 
-        /*
-        |--------------------------------------------------------------------------
-        | ÉTAPE 1 : Tous les L1 doivent avoir UN parrain
-        |--------------------------------------------------------------------------
-        */
-        $l1_sans_parrain = $l1_all->filter(function($et){
-            return !$et->parrainage; // pas encore de parrain
-        });
-
-        foreach ($l1_sans_parrain as $l1) {
-            // trouver un L2 n'ayant pas atteint la limite (ou 0 filleul)
-            $parrain = $L2Model::withCount('filleuls')
-                ->orderBy('filleuls_count', 'asc')
-                ->first();
-
-            if ($parrain) {
-                Parrainage::create([
-                    'parrain_id' => $parrain->id,
-                    'filleul_id' => $l1->id,
-                    'filiere'    => $filiere
-                ]);
-            }
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | ÉTAPE 2 : Tous les L2 doivent avoir AU MOINS un filleul
-        |--------------------------------------------------------------------------
-        */
-        $l2_sans_filleul = $l2_all->filter(function($et){
-            return $et->filleuls()->count() == 0;
-        });
-
-        foreach ($l2_sans_filleul as $l2) {
-            $filleul = $l1_all->filter(fn($x) => !$x->parrainage)->first();
-
-            if ($filleul) {
-                Parrainage::create([
-                    'parrain_id' => $l2->id,
-                    'filleul_id' => $filleul->id,
-                    'filiere'    => $filiere
-                ]);
-            }
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | ÉTAPE 3 : Distribution des restes (jusqu'à 5 filleuls)
-        |--------------------------------------------------------------------------
-        */
-        $l1_restants = $l1_all->filter(fn($x) => !$x->parrainage);
-        $l2_dispo = $L2Model::withCount('filleuls')
-            ->get()
-            ->filter(fn($p) => $p->filleuls_count < 5);
-
-        $index = 0;
-
-        foreach ($l1_restants as $l1) {
-            if (!isset($l2_dispo[$index])) break;
-
-            $parrain = $l2_dispo[$index];
-
-            Parrainage::create([
-                'parrain_id' => $parrain->id,
-                'filleul_id' => $l1->id,
-                'filiere'    => $filiere
-            ]);
-
-            $parrain->filleuls_count++;
-
-            if ($parrain->filleuls_count >= 5) {
-                $index++;
-            }
-        }
+    if ($l1_all->isEmpty() || $l2_all->isEmpty()) {
+        return;
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | 1. Récupérer les L1 qui ont déjà un parrain
+    |--------------------------------------------------------------------------
+    */
+
+    $l1AvecParrain = Parrainage::where('filiere', $filiere)
+        ->pluck('filleul_id')
+        ->toArray();
+
+    /*
+    |--------------------------------------------------------------------------
+    | 2. Récupérer les L1 sans parrain
+    |--------------------------------------------------------------------------
+    */
+
+    $l1SansParrain = $l1_all->filter(function ($l1) use ($l1AvecParrain) {
+        return !in_array($l1->id, $l1AvecParrain);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | 3. Récupérer le nombre de filleuls par L2
+    |--------------------------------------------------------------------------
+    */
+
+    $nombreFilleuls = Parrainage::where('filiere', $filiere)
+        ->selectRaw('parrain_id, COUNT(*) as total')
+        ->groupBy('parrain_id')
+        ->pluck('total', 'parrain_id');
+
+    /*
+    |--------------------------------------------------------------------------
+    | 4. Distribuer les L1 sans parrain
+    |--------------------------------------------------------------------------
+    */
+
+    foreach ($l1SansParrain as $l1) {
+
+        // Trouver le L2 avec le moins de filleuls
+        $parrain = $l2_all
+            ->sortBy(function ($l2) use ($nombreFilleuls) {
+                return $nombreFilleuls[$l2->id] ?? 0;
+            })
+            ->first();
+
+        if (!$parrain) {
+            continue;
+        }
+
+        $totalActuel = $nombreFilleuls[$parrain->id] ?? 0;
+
+        // Maximum 5 filleuls par parrain
+        if ($totalActuel >= 5) {
+            break;
+        }
+
+        Parrainage::create([
+            'parrain_id' => $parrain->id,
+            'filleul_id'  => $l1->id,
+            'filiere'     => $filiere,
+        ]);
+
+        // Mettre à jour le compteur local
+        $nombreFilleuls[$parrain->id] = $totalActuel + 1;
+    }
+}
 
 
 
