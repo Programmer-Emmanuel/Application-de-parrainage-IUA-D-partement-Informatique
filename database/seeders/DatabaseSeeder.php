@@ -20,11 +20,11 @@ class DatabaseSeeder extends Seeder
     {
        $admin = new Admin();
        $admin->id = (string) Str::uuid();
-       $admin->nom = 'Emmanuel Bamidélé';
-       $admin->email = 'marcbamidele@gmail.com';
-       $admin->telephone = '0140022693';
+       $admin->nom = 'Super Admin';
+       $admin->email = 'admin@gmail.com';
+       $admin->telephone = '0102030405';
        $admin->role = 1;
-       $admin->password = Hash::make('180305abc');
+       $admin->password = Hash::make('Admin123#');
        $admin->save();
        $this->command->info("     - Super Admin créé");
     }
