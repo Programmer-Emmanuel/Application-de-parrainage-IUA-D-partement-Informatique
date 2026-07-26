@@ -24,8 +24,8 @@ Avant de commencer, assurez-vous d'avoir installé :
 ### 1. Cloner le projet
 
 ```bash
-git clone https://github.com/Programmer-Emmanuel-183/API-parrainage-redis.git
-cd API-parrainage-redis
+git clone https://github.com/Programmer-Emmanuel/Application-de-parrainage-IUA-D-partement-Informatique.git
+cd Application-de-parrainage-IUA-D-partement-Informatique
 ```
 
 ### 2. Installer les dépendances
